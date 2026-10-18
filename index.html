@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Polyconverter</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        color: #222;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .converter {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .box {
+        background: white;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 350px;
+        resize: vertical;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 22px;
+        line-height: 1.8;
+        outline: none;
+    }
+
+    textarea:focus {
+        border-color: #555;
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin: 18px 0;
+    }
+
+    button {
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        background: #222;
+        color: white;
+    }
+
+    button:hover {
+        opacity: 0.85;
+    }
+
+    @media (max-width: 700px) {
+        .converter {
+            grid-template-columns: 1fr;
+        }
+
+        textarea {
+            height: 250px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Polyconverter</h1>
+
+    <div class="subtitle">
+        Myanmar ↔ Shan Script Converter
+    </div>
+
+    <div class="converter">
+
+        <div class="box">
+            <label>Myanmar / Burmese</label>
+            <textarea id="myanmar"
+                placeholder="Type Myanmar script here..."></textarea>
+        </div>
+
+        <div class="box">
+            <label>Shan</label>
+            <textarea id="shan"
+                placeholder="Type Shan script here..."></textarea>
+        </div>
+
+    </div>
+
+    <div class="buttons">
+        <button onclick="clearText()">Clear</button>
+        <button onclick="swapText()">Swap</button>
+    </div>
+
+</div>
+
+
+<script>
+
+/*
+====================================================
+ Myanmar → Shan
+====================================================
+*/
+
+/*
+ IMPORTANT:
+ Longer combinations must be converted BEFORE
+ individual characters.
+*/
+
+const consonants = {
+
+    "က္က": "ၵ်ၵ",
+    "က္ခ": "ၵ်ၶ",
+    "ဂ္ဂ": "ၷ်ၷ",
+    "ဂ္ဃ": "ၷ်ꧠ",
+
+    "င်္က": "င်ၵ",
+    "င်္ခ": "င်ၶ",
+    "င်္ဂ": "င်ၷ",
+    "င်္ဃ": "င်ꧠ",
+
+    "စ္စ": "ၸ်ၸ",
+    "စ္ဆ": "ၸ်ꧡ",
+
+    "ဇ္ဇ": "ꩡ်ꩡ",
+
+    "ည": "ၺ်ၺ",
+    "ဉ္စ": "ၺ်ၸ",
+    "ဉ္ဆ": "ၺ်ꧡ",
+    "ဉ္ဇ": "ၺ်ꩡ",
+    "ဉ္စျ": "ၺ်ꧢ",
+
+    "ဋ္ဋ": "ꩦ်ꩦ",
+    "ဋ္ဌ": "ꩦ်ꩧ",
+
+    "ဍ္ဍ": "ꩨ်ꩨ",
+    "ဍ္ဎ": "ꩨ်ꩩ",
+
+    "ဏ္ဏ": "ꧣ်ꧣ",
+    "ဏ္ဋ": "ꧣ်ꩦ",
+    "ဏ္ဌ": "ꧣ်ꩧ",
+    "ဏ္ဍ": "ꧣ်ꩨ",
+    "ဏ္ဎ": "ꧣ်ꩩ",
+
+    "တ္တ": "တ်တ",
+    "တ္ထ": "တ်ထ",
+
+    "ဒ္ဒ": "ၻ်ၻ",
+    "ဒ္ဓ": "ၻ်ꩪ",
+
+    "န္န": "ၼ်ၼ",
+    "န္တ": "ၼ်တ",
+    "န္ထ": "ၼ်ထ",
+    "န္ဒ": "ၼ်ၻ",
+    "န္ဓ": "ၼ်ꩪ",
+
+    "ပ္ပ": "ပ်ပ",
+    "ပ္ဖ": "ပ်ၽ",
+
+    "ဗ္ဗ": "ၿ်ၿ",
+    "ဗ္ဘ": "ၿ်ꧤ",
+
+    "မ္မ": "မ်မ",
+    "မ္ပ": "မ်ပ",
+    "မ္ဖ": "မ်ၽ",
+    "မ္ဗ": "မ်ၿ",
+    "မ္ဘ": "မ်ꧤ",
+
+    "ယှ": "ယ်ႁ",
+    "လ္လ": "လ်လ",
+    "ဝှ": "ဝ်ႁ",
+
+    "ဿ": "သ်သ",
+    "သ္မ": "သ်မ",
+    "သ္တ": "သ်တ",
+    "ဟ္မ": "ႁ်မ",
+    "ဠှ": "ꩮ်ႁ",
+    "မှ": "မ်ႁ"
+};
+
+
+const basic = {
+
+    "က": "ၵ",
+    "ခ": "ၶ",
+    "ဂ": "ၷ",
+    "ဃ": "ꧠ",
+    "င": "င",
+
+    "စ": "ၸ",
+    "ဆ": "ꧡ",
+    "ဇ": "ꩡ",
+    "ဈ": "ꧢ",
+    "ဉ": "ၺ",
+
+    "ဋ": "ꩦ",
+    "ဌ": "ꩧ",
+    "ဍ": "ꩨ",
+    "ဎ": "ꩩ",
+    "ဏ": "ꧣ",
+
+    "တ": "တ",
+    "ထ": "ထ",
+    "ဒ": "ၻ",
+    "ဓ": "ꩪ",
+    "န": "ၼ",
+
+    "ပ": "ပ",
+    "ဖ": "ၽ",
+    "ဗ": "ၿ",
+    "ဘ": "ꧤ",
+    "မ": "မ",
+
+    "ယ": "ယ",
+    "ရ": "ရ",
+    "လ": "လ",
+    "ဝ": "ဝ",
+
+    "သ": "သ",
+    "ဟ": "ႁ",
+    "ဠ": "ꩮ",
+
+    "အံ": "ဢံ",
+    "အ": "ဢ",
+
+    "အာ": "ဢႃ",
+    "ဣ": "ဢိ",
+    "ဤ": "ဢီ",
+    "ဥ": "ဢု",
+    "ဦ": "ဢူ",
+    "ဧ": "ဢေ",
+    "သြ": "ဢေႃ"
+};
+
+
+/*
+ Vowel conversion
+*/
+
+const vowels = {
+
+    "ော": "ေႃ",
+    "ာ": "ႃ",
+
+    "ိ": "ိ",
+    "ီ": "ီ",
+    "ု": "ု",
+    "ူ": "ူ",
+
+    "ေ": "ေ",
+
+    "ျ": "ျ",
+    "ြ": "ြ",
+    "ွ": "ွ"
+};
+
+
+/*
+====================================================
+ Special Myanmar → Shan conversion
+====================================================
+
+ When "ာ" follows a consonant combination marked
+ in the user's @ list, it becomes "ၢ".
+*/
+
+const specialAA = [
+    "က္က",
+    "က္ခ",
+    "ဂ္ဂ",
+    "ဃ္ဃ",
+
+    "င်္က",
+    "င်္ခ",
+    "င်္ဂ",
+    "င်္ဃ",
+
+    "စ္စ",
+    "စ္ဆ",
+
+    "ဇ္ဇ",
+
+    "ည",
+    "ဉ္စ",
+    "ဉ္ဆ",
+    "ဉ္ဇ",
+    "ဉ္စျ",
+
+    "ဋ္ဋ",
+    "ဋ္ဌ",
+
+    "ဍ္ဍ",
+    "ဍ္ဎ",
+
+    "ဏ္ဏ",
+    "ဏ္ဋ",
+    "ဏ္ဌ",
+    "ဏ္ဍ",
+    "ဏ္ဎ",
+
+    "တ္တ",
+    "တ္ထ",
+
+    "ဒ္ဒ",
+    "ဒ္ဓ",
+
+    "န္န",
+    "န္တ",
+    "န္ထ",
+    "န္ဒ",
+    "န္ဓ",
+
+    "ပ္ပ",
+    "ပ္ဖ",
+
+    "ဗ္ဗ",
+    "ဗ္ဘ",
+
+    "မ္မ",
+    "မ္ပ",
+    "မ္ဖ",
+    "မ္ဗ",
+    "မ္ဘ",
+
+    "ယှ",
+    "လ္လ",
+    "ဝှ",
+    "ဿ",
+    "သ္မ",
+    "သ္တ",
+    "ဟ္မ",
+    "ဠှ",
+    "မှ"
+];
+
+
+/*
+====================================================
+ Myanmar → Shan
+====================================================
+*/
+
+function myanmarToShan(text) {
+
+    /*
+    Protect special combinations first.
+    */
+
+    let result = text;
+
+    // Sort longest first
+    const consonantKeys = Object.keys(consonants)
+        .sort((a, b) => b.length - a.length);
+
+    for (const key of consonantKeys) {
+        result = result.split(key).join(consonants[key]);
+    }
+
+
+    /*
+    Special "ာ" rule.
+
+    The original Myanmar combination has already
+    been converted above, so we check the resulting
+    Shan form.
+    */
+
+    const specialShanForms = specialAA
+        .map(x => consonants[x])
+        .filter(Boolean);
+
+    for (const form of specialShanForms) {
+        result = result.split(form + "ာ")
+                       .join(form + "ၢ");
+    }
+
+
+    /*
+    Convert vowels.
+    */
+
+    // Important: "ော" must come before "ေ" and "ာ"
+    result = result.split("ော").join("ေႃ");
+
+    result = result.split("ာ").join("ႃ");
+
+    result = result.split("ိ").join("ိ");
+    result = result.split("ီ").join("ီ");
+    result = result.split("ု").join("ု");
+    result = result.split("ူ").join("ူ");
+    result = result.split("ေ").join("ေ");
+    result = result.split("ျ").join("ျ");
+    result = result.split("ြ").join("ြ");
+    result = result.split("ွ").join("ွ");
+
+
+    /*
+    Finally convert basic consonants.
+    */
+
+    const basicKeys = Object.keys(basic)
+        .sort((a, b) => b.length - a.length);
+
+    for (const key of basicKeys) {
+        result = result.split(key).join(basic[key]);
+    }
+
+    return result;
+}
+
+
+/*
+====================================================
+ Shan → Myanmar
+====================================================
+*/
+
+/*
+Reverse dictionaries automatically.
+*/
+
+const reverseConsonants = {};
+
+for (const key in consonants) {
+    reverseConsonants[consonants[key]] = key;
+}
+
+const reverseBasic = {};
+
+for (const key in basic) {
+    reverseBasic[basic[key]] = key;
+}
+
+
+/*
+ Shan → Myanmar
+*/
+
+function shanToMyanmar(text) {
+
+    let result = text;
+
+
+    /*
+    Convert longer combinations first.
+    */
+
+    const reverseKeys = Object.keys(reverseConsonants)
+        .sort((a, b) => b.length - a.length);
+
+    for (const key of reverseKeys) {
+        result = result.split(key)
+                       .join(reverseConsonants[key]);
+    }
+
+
+    /*
+    Special ၢ → ာ
+
+    This is done before normal ႃ conversion.
+    */
+
+    result = result.replace(/ၢ/g, "ာ");
+
+
+    /*
+    Vowels
+    */
+
+    result = result.split("ေႃ").join("ော");
+    result = result.split("ႃ").join("ာ");
+
+    result = result.split("ိ").join("ိ");
+    result = result.split("ီ").join("ီ");
+    result = result.split("ု").join("ု");
+    result = result.split("ူ").join("ူ");
+    result = result.split("ေ").join("ေ");
+    result = result.split("ျ").join("ျ");
+    result = result.split("ြ").join("ြ");
+    result = result.split("ွ").join("ွ");
+
+
+    /*
+    Basic consonants
+    */
+
+    const reverseBasicKeys = Object.keys(reverseBasic)
+        .sort((a, b) => b.length - a.length);
+
+    for (const key of reverseBasicKeys) {
+        result = result.split(key)
+                       .join(reverseBasic[key]);
+    }
+
+    return result;
+}
+
+
+/*
+====================================================
+ Live conversion
+====================================================
+*/
+
+const myanmarBox = document.getElementById("myanmar");
+const shanBox = document.getElementById("shan");
+
+
+let updating = false;
+
+
+/*
+ Myanmar → Shan
+*/
+
+myanmarBox.addEventListener("input", function () {
+
+    if (updating) return;
+
+    updating = true;
+
+    shanBox.value = myanmarToShan(
+        myanmarBox.value
+    );
+
+    updating = false;
+});
+
+
+/*
+ Shan → Myanmar
+*/
+
+shanBox.addEventListener("input", function () {
+
+    if (updating) return;
+
+    updating = true;
+
+    myanmarBox.value = shanToMyanmar(
+        shanBox.value
+    );
+
+    updating = false;
+});
+
+
+/*
+ Clear
+*/
+
+function clearText() {
+
+    myanmarBox.value = "";
+    shanBox.value = "";
+}
+
+
+/*
+ Swap
+*/
+
+function swapText() {
+
+    const temp = myanmarBox.value;
+
+    myanmarBox.value = shanBox.value;
+    shanBox.value = temp;
+}
+
+</script>
+
+</body>
+</html>
